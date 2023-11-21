@@ -1,1 +1,3 @@
-# fabfriction
+# FabFriction
+
+New repo, exciting things to come...
