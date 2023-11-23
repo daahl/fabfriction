@@ -4,11 +4,12 @@ import struct
 # Define constants
 COMMAND_HEADER = 0x1234
 RDT_REQUEST_COMMAND = 0x0002  # Replace with the actual command from Table 9.1
-SAMPLE_COUNT = 10  # Replace with the desired sample count
+SAMPLE_COUNT = 0  # Replace with the desired sample count
 UDP_IP = '192.168.125.4'
 UDP_PORT = 49152
 CPF = 4448221.500
 CPT = 112984.8281
+LBF2N = 4.44822
 
 # Create a socket
 udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -28,15 +29,18 @@ print('Done.')
 
 print('Receiving packets...')
 
-response, server = udp_socket.recvfrom(36)
+while(True):
 
-# Unpack the response structure
-rdt_response = struct.unpack('>IIIiiiiii', response)
+    response, server = udp_socket.recvfrom(36)
 
-# Process the response data
-rdt_sequence, ft_sequence, status, Fx, Fy, Fz, Tx, Ty, Tz = rdt_response
+    # Unpack the response structure
+    rdt_response = struct.unpack('>IIIiiiiii', response)
 
-print(f'Received:\nRDT-seq: {rdt_sequence}\nFT-seq: {ft_sequence}\nStatus: {status}\nFx: {Fx/CPF}\nFy: {Fy/CPF}\nFz: {Fz/CPF}\nTx: {Tx/CPT}\nTy: {Ty/CPT}\nTz: {Tz/CPT}')
+    # Process the response data
+    rdt_sequence, ft_sequence, status, Fx, Fy, Fz, Tx, Ty, Tz = rdt_response
+
+    #print(f'Received:\nRDT-seq: {rdt_sequence}\nFT-seq: {ft_sequence}\nStatus: {status}\nFx: {Fx/CPF}\nFy: {Fy/CPF}\nFz: {Fz/CPF}\nTx: {Tx/CPT}\nTy: {Ty/CPT}\nTz: {Tz/CPT}')
+    print(f'Fz: {Fz/CPF * LBF2N}')
 
 # Close the socket
 udp_socket.close()
