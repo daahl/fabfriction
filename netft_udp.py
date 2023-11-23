@@ -1,3 +1,6 @@
+#
+#   Script to connect to the F/T and read raw data over UDP.
+#
 import socket
 import struct
 
