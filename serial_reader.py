@@ -5,14 +5,13 @@ import serial
 import time
 
 # Constants
-PORT = "COM9"
+PORT = "COM3"
 BAUDRATE = 115200
 
 # Open the serial port
 ser = serial.Serial(PORT, BAUDRATE)
 
 try:
-
     # Write data to the serial port
     data_to_send = "Hello!"
     ser.write(data_to_send.encode('utf-8'))  # Encode string to bytes
@@ -23,6 +22,9 @@ try:
     # Read data from the serial port
     received_data = ser.readline().decode('utf-8').strip()
     print(f"Received: {received_data}")
+
+except KeyboardInterrupt:
+    print("Execution stopped by user.")
 
 except Exception as e:
     print(f"Error: {e}")
