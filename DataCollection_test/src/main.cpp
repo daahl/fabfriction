@@ -24,5 +24,5 @@ void loop() {
       Serial.println("LED off!");
     }
   }
-  delay(100);
+  Serial.println(millis());
 }
