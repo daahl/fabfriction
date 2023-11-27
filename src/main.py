@@ -12,9 +12,9 @@ import keyboard as kb # keyboard interupts during runtime
 import time # timestamps and sleep
 import argparse as ap # command line argument parser
 import csv # save data as csv file
-import socket
+import socket   # for reading force-torque sensor
 import struct
-import serial
+import serial   # for reading IR-sensor
 
 # Define constants netft udp
 COMMAND_HEADER = 0x1234
@@ -46,7 +46,6 @@ print('Staring script, press Enter to exit...')
 print(f'Given COM-port: {comport}')
 print(f'Save path: {filepath}')
 print('Filename is: data_YYMMDD_HHMMSS.csv')
-
 
 # Neftft udp
 def setup_netft_udp():
@@ -130,7 +129,7 @@ def save_to_csv(data):
     with open(savepath, mode='w', newline='') as dataFile:
         dataFile = csv.writer(dataFile, delimiter=';')
         
-        dataFile.writerow(['Time', 'Vel1', 'Vel2', 'Force'])
+        dataFile.writerow(['Time', 'Vel1', 'Fx', 'Fy', 'Fz', 'Tx', 'Ty', 'Tz'])
         dataFile.writerows(data)
 
 if __name__ == "__main__":
