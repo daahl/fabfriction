@@ -146,9 +146,10 @@ if __name__ == "__main__":
         
         arduino_data = read_arduino()
         netft_data = read_netft()
+        time_now = [time.time()]
 
         # TODO: Add time stamp
-        data.append(arduino_data + netft_data)  # append row
+        data.append(time_now + arduino_data + netft_data)  # append row
 
         print("Press Enter to exit.")
         time.sleep(0.5)
