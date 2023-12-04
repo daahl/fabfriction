@@ -10,7 +10,7 @@
 #define TOL 50
 #define MID 600
 
-#define LINEWIDTH 0.872639 //mm
+int incomingByte = 0; // for incoming serial data
 
 float reading = 0;
 float lastMillis = 0;
@@ -47,6 +47,15 @@ void loop() {
     
   }
 
-  Serial.println(deltaT);
+  // send data only when you receive data:
+  if (Serial.available() > 0) {
+    // read the incoming byte:
+    incomingByte = Serial.parseInt();
+
+    if(incomingByte == 1){
+      Serial.println(deltaT);
+    }
+  }
+  
   deltaT = 0;
 }

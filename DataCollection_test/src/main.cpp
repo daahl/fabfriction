@@ -3,6 +3,9 @@
 
 #define LEDPIN 5
 int incomingByte = 0; // for incoming serial data
+unsigned long measTime;
+int velocity;
+String msg;
 
 void setup() {
   Serial.begin(115200);
@@ -11,6 +14,11 @@ void setup() {
 }
 
 void loop() {
+  measTime = micros();
+  velocity = random(0, 100);
+
+  msg = (String)measTime + "," + (String)velocity;
+
   // send data only when you receive data:
   if (Serial.available() > 0) {
     // read the incoming byte:
@@ -18,11 +26,12 @@ void loop() {
 
     if(incomingByte == 1){
       digitalWrite(LEDPIN, LOW);
-      Serial.println("LED on!");
+      Serial.println();
     }else if(incomingByte == 2){
       digitalWrite(LEDPIN, HIGH);
-      Serial.println("LED off!");
+      Serial.println();
     }
   }
-  Serial.println(millis());
+
+  Serial.println(msg);
 }
