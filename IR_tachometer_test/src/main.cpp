@@ -3,14 +3,13 @@
 // put function declarations here:
 //int myFunction(int, int);
 
-#define APIN 13
+#define ROTPIN 13
+#define TRANPIN 12
 #define BAUDRATE 115200
 
 // brighter = lower analog value
 #define TOL 50
 #define MID 600
-
-#define LINEWIDTH 0.872639 //mm
 
 float reading = 0;
 float lastMillis = 0;
@@ -23,7 +22,8 @@ String msg;
 
 void setup() {
   Serial.begin(BAUDRATE);
-  pinMode(APIN, INPUT);
+  pinMode(ROTPIN, INPUT);
+  pinMode(TRANPIN, INPUT);
 }
 
 void loop() {
@@ -31,7 +31,7 @@ void loop() {
   // Measure times between triggers and calculate velocity and RPM
   while(deltaT == 0){
 
-    reading = analogRead(APIN);
+    reading = analogRead(ROTPIN);
 
     if(reading < (MID - TOL) and not triggered){
       triggered = true;
