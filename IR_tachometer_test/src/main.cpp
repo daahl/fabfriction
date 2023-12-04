@@ -11,12 +11,22 @@
 #define TOL 50
 #define MID 600
 
-float reading = 0;
-float lastMillis = 0;
-float newMillis = 0;
-float deltaT = 0;
+int incomingByte = 0; // for incoming serial data
 
-bool triggered = false;
+float rotReading = 0;
+unsigned long rotLastMillis = 0;
+unsigned long rotNewMillis = 0;
+unsigned long rotDeltaT = 0;
+
+float tranReading = 0;
+unsigned long tranLastMillis = 0;
+unsigned long tranNewMillis = 0;
+unsigned long tranDeltaT = 0;
+
+unsigned long bootTime = 0;
+
+bool rotTrig = false;
+bool tranTrig = false;
 
 String msg;
 
@@ -27,26 +37,49 @@ void setup() {
 }
 
 void loop() {
+  tranReading = analogRead(TRANPIN);
 
-  // Measure times between triggers and calculate velocity and RPM
-  while(deltaT == 0){
+  // ##### ROTATION
+  rotReading = analogRead(ROTPIN);
 
-    reading = analogRead(ROTPIN);
+  if(rotReading < (MID - TOL) and not rotTrig){
+    rotTrig = true;
+    rotLastMillis = micros();
+  }
+  if(rotReading > (MID + TOL) and rotTrig){
+    rotTrig = false;
 
-    if(reading < (MID - TOL) and not triggered){
-      triggered = true;
-      lastMillis = millis();
-    }
-    if(reading > (MID + TOL) and triggered){
-      triggered = false;
-
-      // Get time across white stripe
-      newMillis = millis();
-      deltaT = newMillis - lastMillis;
-    }
-    
+    rotNewMillis = micros();
+    rotDeltaT = rotNewMillis - rotLastMillis;
   }
 
-  Serial.println(deltaT);
-  deltaT = 0;
+  // ##### TRANSLATION
+  tranReading = analogRead(ROTPIN);
+
+  if(tranReading < (MID - TOL) and not tranTrig){
+    tranTrig = true;
+    tranLastMillis = micros();
+  }
+  if(tranReading > (MID + TOL) and tranTrig){
+    tranTrig = false;
+
+    tranNewMillis = micros();
+    tranDeltaT = tranNewMillis - tranLastMillis;
+  }
+
+  // ##### PRINT ON REQUEST
+  if (Serial.available() > 0) {
+    // read the incoming byte:
+    incomingByte = Serial.parseInt();
+
+    if(incomingByte == 1){
+      bootTime = millis();
+      msg = (String)bootTime + "," + (String)rotDeltaT + "," + (String)tranDeltaT;
+      Serial.println(msg);
+
+      // this is wrong
+      rotDeltaT = 0;
+      tranDeltaT = 0;
+    }
+  }
 }
