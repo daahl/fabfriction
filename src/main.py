@@ -3,10 +3,6 @@
 #   FabFriciton group - 2023
 #
 
-########## TODO
-# Save last used COM port and dest path in config.json and use as default if none is given
-# 
-
 ########## Imports
 import keyboard as kb # keyboard interupts during runtime
 import time # timestamps and sleep
@@ -34,16 +30,15 @@ serial_port = None
 # Parse command line arguments
 # https://docs.python.org/3/library/argparse.html
 cArgsParser = ap.ArgumentParser(description='Process startup arguments.')
-cArgsParser.add_argument('-c', '--COM', action='store', help='Enter COM-port number as integer.', nargs=1, required=True, type=int)
-cArgsParser.add_argument('-p', '--PATH', action='store', default='', help='Enter filepath, without trailing "\\", or leave blank to save in same directory.', nargs=1, type=str) 
+cArgsParser.add_argument('-c', '--PORT', action='store', help='Enter port as a string, the format is for Linux: /dev/ttyUSBx. Run this command to check ports: dmesg | grep USB', nargs=1, type=str, default= '/dev/ttyUSB0')
+cArgsParser.add_argument('-p', '--PATH', action='store', help='Enter filepath, without trailing "\\", or leave blank to save in same directory.', nargs=1, type=str, default='') 
 
 cArgs = cArgsParser.parse_args()
-comport = cArgs.COM
+port = cArgs.PORT
 filepath = cArgs.PATH
 
-# Starting data collection
 print('Staring script, press Enter to exit...')
-print(f'Given COM-port: {comport}')
+print(f'Given port: {port}')
 print(f'Save path: {filepath}')
 print('Filename is: data_YYMMDD_HHMMSS.csv')
 
@@ -56,7 +51,7 @@ def setup_netft_udp():
     # Server address and port
     server_address = (UDP_IP, UDP_PORT)  # Replace with the actual server address and port
 
-    print(f'Sending packet to {UDP_IP} on port {UDP_PORT}...')
+    #print(f'Sending packet to {UDP_IP} on port {UDP_PORT}...')
 
     # Create the RDT request structure
     rdt_request = struct.pack('>HHI', COMMAND_HEADER, RDT_REQUEST_COMMAND, SAMPLE_COUNT)
@@ -64,12 +59,8 @@ def setup_netft_udp():
     # Send the RDT request
     udp_socket.sendto(rdt_request, server_address)
 
-    print('Done.')
-
 
 def read_netft():
-    print('Receiving packets...')
-
     response, server = udp_socket.recvfrom(36)
 
     # Unpack the response structure
@@ -78,10 +69,10 @@ def read_netft():
     # Process the response data
     rdt_sequence, ft_sequence, status, Fx, Fy, Fz, Tx, Ty, Tz = rdt_response
 
-    #print(f'Received:\nRDT-seq: {rdt_sequence}\nFT-seq: {ft_sequence}\nStatus: {status}\nFx: {Fx/CPF}\nFy: {Fy/CPF}\nFz: {Fz/CPF}\nTx: {Tx/CPT}\nTy: {Ty/CPT}\nTz: {Tz/CPT}')
-    print(f'Fz: {Fz/CPF * LBF2N}')
+    force = [Fx, Fy, Fz]
+    torque = [Tx, Ty, Tz]
 
-    netft_data = [Fx, Fy, Fz, Tx, Ty, Tz]
+    netft_data = [f/CPF * LBF2N for f in force] + [t/CPT * LBF2N for t in torque]
 
     return netft_data
 
@@ -93,7 +84,8 @@ def close_socket():
 def setup_arduino():
     global serial_port
     try:
-        serial_port = serial.Serial(comport, BAUDRATE)
+        serial_port = serial.Serial(port, BAUDRATE)
+        print(serial_port)
         return 1, serial_port
     except Exception as e:
         print("Error opening serial port!")
@@ -103,8 +95,8 @@ def setup_arduino():
 def read_arduino():
     global serial_port
     # arduino returns data after incoming "1" on serial
-    serial_port.write("1")
-    return serial_port.readline().decode('utf-8').strip()
+    serial_port.write(1)
+    return serial_port.readline().decode('utf-8').strip().split(',')
     
 def close_arduino():
     global serial_port
@@ -119,7 +111,7 @@ def close_arduino():
 def save_to_csv(data):
     # Save data to CSV file
     fileTime = time.localtime()
-    filename = 'data_' + str(fileTime.tm_year) + str(fileTime.tm_mon) + str(fileTime.tm_mday) + "_" + str(fileTime.tm_hour) + str(fileTime.tm_min) + str(fileTime.tm_sec) + '.csv'
+    filename = 'data_' + str(fileTime.tm_year) + str(fileTime.tm_mon) + str(fileTime.tm_mday) + "_" + str(fileTime.tm_hour) + "-" + str(fileTime.tm_min) + "-" + str(fileTime.tm_sec) + '.csv'
 
     if(filepath == ''):
         savepath = filename
@@ -129,34 +121,30 @@ def save_to_csv(data):
     with open(savepath, mode='w', newline='') as dataFile:
         dataFile = csv.writer(dataFile, delimiter=';')
         
-        dataFile.writerow(['Time', 'Vel1', 'Fx', 'Fy', 'Fz', 'Tx', 'Ty', 'Tz'])
+        dataFile.writerow(['Time', 'Vel', 'Fx', 'Fy', 'Fz', 'Tx', 'Ty', 'Tz'])
         dataFile.writerows(data)
 
 if __name__ == "__main__":
     data = []
 
     # Initialize
-    setup_netft_udp()
-    setup_arduino()
+    num, port = setup_arduino()
 
     while True:
         if kb.is_pressed('enter'):
             print("Enter pressed. Exiting the loop. Goodbye!")
             break
+        setup_netft_udp()
         
-        arduino_data = read_arduino()
+        arduino_data = [float(data) for data in read_arduino()]
         netft_data = read_netft()
         time_now = [time.time()]
 
-        # TODO: Add time stamp
+        close_socket()
+
         data.append(time_now + arduino_data + netft_data)  # append row
 
-        print("Press Enter to exit.")
-        time.sleep(0.5)
-
     save_to_csv(data)
-
-    close_socket()
     close_arduino()
 
     
