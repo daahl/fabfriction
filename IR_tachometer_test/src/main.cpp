@@ -4,12 +4,12 @@
 //int myFunction(int, int);
 
 #define ROTPIN 13
-#define TRANPIN 12
+#define TRANPIN 14
 #define BAUDRATE 115200
 
 // brighter = lower analog value
-#define TOL 50
-#define MID 600
+#define TOL 10
+#define MID 2000
 
 int incomingByte = 0; // for incoming serial data
 
@@ -17,11 +17,13 @@ float rotReading = 0;
 unsigned long rotLastMillis = 0;
 unsigned long rotNewMillis = 0;
 unsigned long rotDeltaT = 0;
+unsigned long rotLastDeltaT = 0;
 
 float tranReading = 0;
 unsigned long tranLastMillis = 0;
 unsigned long tranNewMillis = 0;
 unsigned long tranDeltaT = 0;
+unsigned long tranLastDeltaT = 0;
 
 unsigned long bootTime = 0;
 
@@ -37,8 +39,6 @@ void setup() {
 }
 
 void loop() {
-  tranReading = analogRead(TRANPIN);
-
   // ##### ROTATION
   rotReading = analogRead(ROTPIN);
 
@@ -54,7 +54,7 @@ void loop() {
   }
 
   // ##### TRANSLATION
-  tranReading = analogRead(ROTPIN);
+  tranReading = analogRead(TRANPIN);
 
   if(tranReading < (MID - TOL) and not tranTrig){
     tranTrig = true;
@@ -67,6 +67,16 @@ void loop() {
     tranDeltaT = tranNewMillis - tranLastMillis;
   }
 
+  // Reset on new value
+  if(rotDeltaT != rotLastDeltaT){
+    rotLastDeltaT = rotDeltaT;
+    rotDeltaT = 0;
+  }
+  if(tranDeltaT != tranLastDeltaT){
+    tranLastDeltaT = tranDeltaT;
+    tranDeltaT = 0;
+  }
+
   // ##### PRINT ON REQUEST
   if (Serial.available() > 0) {
     // read the incoming byte:
@@ -76,10 +86,6 @@ void loop() {
       bootTime = millis();
       msg = (String)bootTime + "," + (String)rotDeltaT + "," + (String)tranDeltaT;
       Serial.println(msg);
-
-      // this is wrong
-      rotDeltaT = 0;
-      tranDeltaT = 0;
     }
   }
 }
