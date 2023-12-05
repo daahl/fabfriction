@@ -121,7 +121,7 @@ def save_to_csv(data):
     with open(savepath, mode='w', newline='') as dataFile:
         dataFile = csv.writer(dataFile, delimiter=';')
         
-        dataFile.writerow(['Time', 'Vel', 'Fx', 'Fy', 'Fz', 'Tx', 'Ty', 'Tz'])
+        dataFile.writerow(['Time', 'vel1', 'vel2', 'Fx', 'Fy', 'Fz', 'Tx', 'Ty', 'Tz'])
         dataFile.writerows(data)
 
 if __name__ == "__main__":
@@ -134,16 +134,20 @@ if __name__ == "__main__":
         if kb.is_pressed('enter'):
             print("Enter pressed. Exiting the loop. Goodbye!")
             break
+        
+        # Open socket
+        # Has to be opened and closed very time to avoid buffering
         setup_netft_udp()
         
-        arduino_data = [float(data) for data in read_arduino()]
         netft_data = read_netft()
+        arduino_data = [float(data) for data in read_arduino()]
         time_now = [time.time()]
 
         close_socket()
 
         data.append(time_now + arduino_data + netft_data)  # append row
 
+    # Save everything after measuring
     save_to_csv(data)
     close_arduino()
 

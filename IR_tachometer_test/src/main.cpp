@@ -11,15 +11,19 @@
 #define TOL 10
 #define MID 2000
 
+#define LINEWIDTH 0.8726389
+
 int incomingByte = 0; // for incoming serial data
 
 float rotReading = 0;
+float rotVel = 0;
 unsigned long rotLastMillis = 0;
 unsigned long rotNewMillis = 0;
 unsigned long rotDeltaT = 0;
 unsigned long rotLastDeltaT = 0;
 
 float tranReading = 0;
+float tranVel = 0;
 unsigned long tranLastMillis = 0;
 unsigned long tranNewMillis = 0;
 unsigned long tranDeltaT = 0;
@@ -84,7 +88,11 @@ void loop() {
 
     if(incomingByte == 1){
       bootTime = millis();
-      msg = (String)bootTime + "," + (String)rotDeltaT + "," + (String)tranDeltaT;
+
+      rotVel = LINEWIDTH / rotDeltaT;
+      tranVel = LINEWIDTH / tranDeltaT;
+
+      msg = (String)bootTime + "," + (String)rotVel + "," + (String)tranVel;
       Serial.println(msg);
     }
   }
