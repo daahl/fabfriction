@@ -8,8 +8,8 @@
 #define BAUDRATE 115200
 
 // brighter = lower analog value
-#define TOL 10
-#define MID 2000
+#define TOL 5
+#define MID 2024
 
 #define LINEWIDTH 0.8726389
 
@@ -55,6 +55,8 @@ void loop() {
 
     rotNewMillis = micros();
     rotDeltaT = rotNewMillis - rotLastMillis;
+
+    rotLastDeltaT = rotDeltaT;
   }
 
   // ##### TRANSLATION
@@ -69,16 +71,16 @@ void loop() {
 
     tranNewMillis = micros();
     tranDeltaT = tranNewMillis - tranLastMillis;
+
+    tranLastDeltaT = tranDeltaT;
   }
 
-  // Reset on new value
-  if(rotDeltaT != rotLastDeltaT){
-    rotLastDeltaT = rotDeltaT;
-    rotDeltaT = 0;
+  // Assume stand still if no value change in 500 milliseconds
+  if(rotLastMillis > rotNewMillis + 500*1000){
+    rotLastDeltaT = 0;
   }
-  if(tranDeltaT != tranLastDeltaT){
-    tranLastDeltaT = tranDeltaT;
-    tranDeltaT = 0;
+  if(tranLastMillis > tranNewMillis + 500*1000){
+    tranLastDeltaT = 0;
   }
 
   // ##### PRINT ON REQUEST
@@ -89,19 +91,20 @@ void loop() {
     if(incomingByte == "1"){
       bootTime = millis();
 
+      // Prevent div by 0
       if(rotLastDeltaT == 0){
         rotVel = 0;
       }else{
-        rotVel = LINEWIDTH / rotLastDeltaT;
+        rotVel = LINEWIDTH / (rotLastDeltaT / 1000);
       }
       if(tranLastDeltaT == 0){
         tranVel = 0;
       }else{
-        tranVel = LINEWIDTH / tranLastDeltaT;
+        tranVel = LINEWIDTH / (tranLastDeltaT / 1000);
       }
       
 
-      msg = (String)bootTime + "," + (String)rotVel + "," + (String)tranVel;
+      msg = (String)bootTime + "," + String(rotVel,7) + "," + String(tranVel,7);
       Serial.println(msg);
     }
   }
