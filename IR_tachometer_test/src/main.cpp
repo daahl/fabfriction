@@ -13,7 +13,7 @@
 
 #define LINEWIDTH 0.8726389
 
-int incomingByte = 0; // for incoming serial data
+String incomingByte; // for incoming serial data
 
 float rotReading = 0;
 float rotVel = 0;
@@ -86,11 +86,20 @@ void loop() {
     // read the incoming byte:
     incomingByte = Serial.parseInt();
 
-    if(incomingByte == 1){
+    if(incomingByte == "1"){
       bootTime = millis();
 
-      rotVel = LINEWIDTH / rotDeltaT;
-      tranVel = LINEWIDTH / tranDeltaT;
+      if(rotLastDeltaT == 0){
+        rotVel = 0;
+      }else{
+        rotVel = LINEWIDTH / rotLastDeltaT;
+      }
+      if(tranLastDeltaT == 0){
+        tranVel = 0;
+      }else{
+        tranVel = LINEWIDTH / tranLastDeltaT;
+      }
+      
 
       msg = (String)bootTime + "," + (String)rotVel + "," + (String)tranVel;
       Serial.println(msg);
