@@ -1,87 +1,58 @@
 #include <Arduino.h>
 
-// put function declarations here:
-//int myFunction(int, int);
+// Function declarations
+void ISR1();
+//void ISR2();
 
 #define ROTPIN 13
 #define TRANPIN 14
 #define BAUDRATE 115200
 
 // brighter = lower analog value
-#define TOL 5
-#define MID 2024
+const int trigValue = 2024;
+const float lineWidth = 0.8726389;
 
-#define LINEWIDTH 0.8726389
+volatile float rotReading = 0;
+volatile float rotLastReading = 0;
+volatile int rotCount = 0;
+volatile unsigned long rotTime = 0;
+volatile float rotVel = 0;
+
+volatile float tranReading = 0;
+volatile int tranCount = 0;
+volatile unsigned long tranTime = 0;
+
+volatile unsigned long startTime = 0;
+volatile unsigned long stopTime = 0;
+volatile unsigned long countTime = 0;
 
 String incomingByte; // for incoming serial data
 
-float rotReading = 0;
-float rotVel = 0;
-unsigned long rotLastMillis = 0;
-unsigned long rotNewMillis = 0;
-unsigned long rotDeltaT = 0;
-unsigned long rotLastDeltaT = 0;
-
-float tranReading = 0;
-float tranVel = 0;
-unsigned long tranLastMillis = 0;
-unsigned long tranNewMillis = 0;
-unsigned long tranDeltaT = 0;
-unsigned long tranLastDeltaT = 0;
+String msg;
 
 unsigned long bootTime = 0;
-
-bool rotTrig = false;
-bool tranTrig = false;
-
-String msg;
 
 void setup() {
   Serial.begin(BAUDRATE);
   pinMode(ROTPIN, INPUT);
-  pinMode(TRANPIN, INPUT);
+  attachInterrupt(digitalPinToInterrupt(ROTPIN), ISR1, CHANGE);
 }
 
 void loop() {
-  // ##### ROTATION
   rotReading = analogRead(ROTPIN);
 
-  if(rotReading < (MID - TOL) and not rotTrig){
-    rotTrig = true;
-    rotLastMillis = micros();
-  }
-  if(rotReading > (MID + TOL) and rotTrig){
-    rotTrig = false;
+  // Process measurement
+  noInterrupts();
+  stopTime = micros();
+  countTime = stopTime - startTime;
 
-    rotNewMillis = micros();
-    rotDeltaT = rotNewMillis - rotLastMillis;
+  rotVel = (rotCount * lineWidth)/countTime;
 
-    rotLastDeltaT = rotDeltaT;
-  }
-
-  // ##### TRANSLATION
-  tranReading = analogRead(TRANPIN);
-
-  if(tranReading < (MID - TOL) and not tranTrig){
-    tranTrig = true;
-    tranLastMillis = micros();
-  }
-  if(tranReading > (MID + TOL) and tranTrig){
-    tranTrig = false;
-
-    tranNewMillis = micros();
-    tranDeltaT = tranNewMillis - tranLastMillis;
-
-    tranLastDeltaT = tranDeltaT;
-  }
-
-  // Assume stand still if no value change in 500 milliseconds
-  if(rotLastMillis > rotNewMillis + 500*1000){
-    rotLastDeltaT = 0;
-  }
-  if(tranLastMillis > tranNewMillis + 500*1000){
-    tranLastDeltaT = 0;
-  }
+  // Prepare next measurement loop
+  rotCount = 0;
+  tranCount = 0;
+  startTime = micros();
+  interrupts();
 
   // ##### PRINT ON REQUEST
   if (Serial.available() > 0) {
@@ -90,22 +61,21 @@ void loop() {
 
     if(incomingByte == "1"){
       bootTime = millis();
-
-      // Prevent div by 0
-      if(rotLastDeltaT == 0){
-        rotVel = 0;
-      }else{
-        rotVel = LINEWIDTH / (rotLastDeltaT / 1000);
-      }
-      if(tranLastDeltaT == 0){
-        tranVel = 0;
-      }else{
-        tranVel = LINEWIDTH / (tranLastDeltaT / 1000);
-      }
       
-
-      msg = (String)bootTime + "," + String(rotVel,7) + "," + String(tranVel,7);
+      msg = (String)bootTime + "," + String(rotVel,7);
       Serial.println(msg);
     }
   }
+  
+}
+
+void ISR1() {
+  /*rotLastReading = rotReading;
+
+  if (rotReading > trigValue && rotLastReading <= trigValue) {
+    // Rising edge detected
+    rotCount++;
+  }*/
+
+  Serial.println("foobar");
 }
