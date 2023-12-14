@@ -12,6 +12,9 @@ import socket   # for reading force-torque sensor
 import struct
 import serial   # for reading IR-sensor
 
+import matplotlib.pyplot as plt
+import numpy as np
+
 # Define constants netft udp
 COMMAND_HEADER = 0x1234
 RDT_REQUEST_COMMAND = 0x0002  # Replace with the actual command from Table 9.1
@@ -24,11 +27,14 @@ LBF2N = 4.44822
 
 BAUDRATE = 115200
 
+# Global variables
 udp_socket = None
 serial_port = None
+filename = None
 
 # Parse command line arguments
 # https://docs.python.org/3/library/argparse.html
+# TODO: add argument for plotting?
 cArgsParser = ap.ArgumentParser(description='Process startup arguments.')
 cArgsParser.add_argument('-c', '--PORT', action='store', help='Enter port as a string, the format is for Linux: /dev/ttyUSBx. Run this command to check ports: dmesg | grep USB', nargs=1, type=str, default= '/dev/ttyUSB0')
 cArgsParser.add_argument('-p', '--PATH', action='store', help='Enter filepath, without trailing "\\", or leave blank to save in same directory.', nargs=1, type=str, default='') 
@@ -110,6 +116,8 @@ def close_arduino():
     
 def save_to_csv(data):
     # Save data to CSV file
+    global filename
+
     fileTime = time.localtime()
     filename = 'data_' + str(fileTime.tm_year) + str(fileTime.tm_mon) + str(fileTime.tm_mday) + "_" + str(fileTime.tm_hour) + "-" + str(fileTime.tm_min) + "-" + str(fileTime.tm_sec) + '.csv'
 
@@ -123,6 +131,33 @@ def save_to_csv(data):
         
         dataFile.writerow(['Time', 'vel1', 'vel2', 'Fx', 'Fy', 'Fz', 'Tx', 'Ty', 'Tz'])
         dataFile.writerows(data)
+
+def plot_subplot(time_data, plot_data, xlabel, ax):
+    ax.plot(time_data, plot_data[1:])
+    ax.set_ylabel(plot_data[0])
+    ax.set_xlabel(xlabel)
+
+def plot_data():
+    with open(filename, 'r') as file:
+        csv_reader = csv.reader(file, delimiter=';')
+        data = np.array([row for row in csv_reader])
+
+    data = np.transpose(data)   # easier to plot
+
+    fig1, (ax11, ax12) = plt.subplots(2, 1, sharex=True)
+    fig2, (ax21, ax22, ax23) = plt.subplots(3, 1, sharex=True)
+    fig3, (ax31, ax32, ax33) = plt.subplots(3, 1, sharex=True)
+
+    ax = [ax11, ax12, ax21, ax22, ax23, ax31, ax32, ax33]
+    time_data = data[0]
+    xlabel = [None, 'Time', None, None, 'Time', None, None, 'Time']
+
+    for i, row in enumerate(data[1:]):
+        print(row)
+        plot_subplot(time_data[1:], row, xlabel[i], ax[i])
+
+    plt.show()
+
 
 if __name__ == "__main__":
     data = []
@@ -150,5 +185,7 @@ if __name__ == "__main__":
     # Save everything after measuring
     save_to_csv(data)
     close_arduino()
+
+    plot_data()
 
     
